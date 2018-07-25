@@ -20,7 +20,7 @@ data['sigma'] 			= '2.4'
 data['rhoList'] 		= '[0,9,2]'
 data['sigma0'] 			= '3'
 data['alpha']		 	= '0.7'
-data['rotInvariance'] 	= '12'
+data['rotInvariances'] 	= '12'
 r = requests.post(url, files=files, data=data).json()
 
 

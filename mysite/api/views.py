@@ -9,17 +9,19 @@ import cv2
 import os
 import base64
 from . import runcosfire
-
+from django.http import HttpResponse
 
 @csrf_exempt
 def detect(request):
 	data = {"success": False}
 	if request.method == "POST":
 		image = processImage(request)
-		# image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 		_, buffer = cv2.imencode('.png', image)
 		# base64u.rlsafe_b64encode
 		data.update({"image": base64.b64encode(buffer).decode('utf-8'), "success": True})
+		if request.POST.get('source', None) == 'form':
+			imagehtml =  '<img src="data:image/png;base64,' + data['image'] + '"/>'
+			return HttpResponse(imagehtml)
 	return JsonResponse(data)	# return a JSON response
 
 def processImage(request):
@@ -34,9 +36,9 @@ def processImage(request):
 		rhoList 			= range(rhoList[0],rhoList[1],rhoList[2])
 		sigma0,_ 			= getData(request,'sigma0')
 		alpha,_ 			= getData(request,'alpha')
-		rotInvariance,_ 	= getData(request,'rotInvariance')
-		rotInvariance 		= np.arange(rotInvariance)/rotInvariance*np.pi
-		result = runcosfire.main(image, prototype, prototypeCenter, sigma, rhoList, sigma0,  alpha, rotInvariance)
+		rotInvariances,_ 	= getData(request,'rotInvariances')
+		rotInvariances 		= np.arange(rotInvariances)/rotInvariances*np.pi
+		result = runcosfire.main(image, prototype, prototypeCenter, sigma, rhoList, sigma0,  alpha, rotInvariances)
 		return result
 		
 
@@ -46,8 +48,8 @@ def getData(request, name):
 
 	data = request.POST.get(name, None)
 	if data is None:
-		data["error"] = "Sent request is missing: " + name
-		return JsonResponse(data)
+		data = {"error": "Sent request is missing: " + name}
+		return JsonResponse(data) #must return to main
 	
 	if "/" not in data:
 		data = json.loads(data)
