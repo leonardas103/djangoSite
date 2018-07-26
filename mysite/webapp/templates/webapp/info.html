@@ -1,0 +1,16 @@
+{% extends "webapp/header.html" %}
+{% block content %}
+<h2 style="color: #2e6c80;">How to use the API</h2><br>
+<p>Using python's request module we send a POST request to our API:</p>
+{% include 'webapp/includes/apiCodeSnippet.html' %}
+
+<br><br><p>Instead of uploading a file we can specify an image url:</p>
+{% include 'webapp/includes/apiCodeSnippet2.html' %}
+
+<br><br><p>To save our image we must first re-encode the image obtaind from the request:</p>
+{% include 'webapp/includes/saveCodeSnippet.html' %}
+
+<br><br><p>Postprocessing thresholding can be done as follows:</p>
+{% include 'webapp/includes/thresholdCodeSnippet.html' %}
+
+{% endblock %}

@@ -1,15 +1,12 @@
 from django.shortcuts import render
-
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-import numpy as np
+from django.http import JsonResponse, HttpResponse
 import urllib.request
 import json
 import cv2
-import os
+import numpy as np
 import base64
 from . import runcosfire
-from django.http import HttpResponse
 
 @csrf_exempt
 def detect(request):
@@ -17,12 +14,11 @@ def detect(request):
 	if request.method == "POST":
 		image = processImage(request)
 		_, buffer = cv2.imencode('.png', image)
-		# base64u.rlsafe_b64encode
-		data.update({"image": base64.b64encode(buffer).decode('utf-8'), "success": True})
+		data.update({"result": base64.b64encode(buffer).decode('utf-8'), "success": True})
 		if request.POST.get('source', None) == 'form':
-			imagehtml =  '<img src="data:image/png;base64,' + data['image'] + '"/>'
+			imagehtml =  '<img src="data:image/png;base64,' + data['result'] + '"/>'
 			return HttpResponse(imagehtml)
-	return JsonResponse(data)	# return a JSON response
+	return JsonResponse(data)
 
 def processImage(request):
 		image, type 		= getData(request,'image')
@@ -51,7 +47,7 @@ def getData(request, name):
 		data = {"error": "Sent request is missing: " + name}
 		return JsonResponse(data) #must return to main
 	
-	if "/" not in data:
+	if "/" not in data:	#only urls gets returned as string
 		data = json.loads(data)
 	
 	return data, 'data'

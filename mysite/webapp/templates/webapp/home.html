@@ -1,11 +1,55 @@
 {% extends "webapp/header.html" %}
 {% block content %}
+{% load staticfiles %}
+  <h2 style="color: #2e6c80;">Welcome to the COSFIRE image processing homepage</h2><br>
+  <p>COSFIRE (Combination of Shifted Filter Responses) is a trainable filter approach that can be applied in several applications, including feature matching, object localization and recognition and complex scenes, contour detection, vessel segmentation, and image classification.</p>
+
+  <p>A COSFIRE filter is automatically configured to be selective for a pattern that is presented by a user. For example if we use the input image and prototype of just a line, we can detect lines at different orientations in our image.</p>
+
+<!-- <table border="0"><tbody>
+  <tr>
+    <td><img src="{% static 'img/input.png' %}" style='max-height:200px;'> </td>
+    <td><img src="{% static 'img/prototype.png' %}" style='max-height:200px;'> </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top">Input Image</td>
+    <td align="center" valign="top">Prototype</td>
+  </tr>
+  </tbody></table>
+
+<table border="0"><tbody>
+  <tr>
+    <td><img src="{% static 'img/result.png' %}" style='max-height:200px;'> </td>
+    <td><img src="{% static 'img/postprocessing.png' %}" style='max-height:200px;'> </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top">Result</td>
+    <td align="center" valign="top">Postprocessed</td>
+  </tr>
+  </tbody></table> -->
+  <table border="0"><tbody>
+  <tr>
+    <td><img src="{% static 'img/input.png' %}" style='max-height:200px;'> </td>
+    <td><img src="{% static 'img/prototype.png' %}" style='max-height:200px;'> </td>
+    <td><img src="{% static 'img/result.png' %}" style='max-height:200px;'> </td>
+    <td><img src="{% static 'img/postprocessing.png' %}" style='max-height:200px;'> </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top">Input Image</td>
+    <td align="center" valign="top">Prototype</td>
+    <td align="center" valign="top">Result</td>
+    <td align="center" valign="top">Postprocessed</td>
+  </tr>
+  </tbody></table> <br>
+  <p>In the example above, in the postprocessing, the resultant image was applied to a mask to clip the outer circle and then thresholded to a binnary image.</p>
+<br><hr>
+<h2 style="color: #2e6c80;">Web Form:</h2>
   <form action="/api/" method = "post" enctype="multipart/form-data">  
   	{% csrf_token %}
     {% for field in form.visible_fields %}
     <div class="form-group row">
-      <label class="col-sm-2 col-form-label"> {{ field.label_tag }} </label>
-      <div class="col-sm-10"> {{ field }} </div>
+      <label class="col-sm-2 col-form-label" > {{ field.label_tag }} </label>
+      <div class="col-sm-10" data-toggle="tooltip" title="{{field.help_text}}" data-original-title="Default tooltip"> {{ field }} </div>
     </div>
     {% endfor %}
     {{form.source}}

@@ -1,0 +1,20 @@
+{% block content %}
+<!-- HTML generated using hilite.me -->
+<div style="background: #272822; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%"><span style="color: #f92672">import</span> <span style="color: #f8f8f2">requests</span>
+
+<span style="color: #f8f8f2">url</span> <span style="color: #f92672">=</span> <span style="color: #e6db74">&quot;http://localhost:8000/api/&quot;</span>
+
+<span style="color: #f8f8f2">files,</span> <span style="color: #f8f8f2">data</span>             <span style="color: #f92672">=</span> <span style="color: #f8f8f2">{},</span> <span style="color: #f8f8f2">{}</span>
+<span style="color: #f8f8f2">files[</span><span style="color: #e6db74">&#39;image&#39;</span><span style="color: #f8f8f2">]</span>          <span style="color: #f92672">=</span> <span style="color: #f8f8f2">open(</span><span style="color: #e6db74">&quot;input.png&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;rb&quot;</span><span style="color: #f8f8f2">)</span>
+<span style="color: #f8f8f2">files[</span><span style="color: #e6db74">&#39;prototype&#39;</span><span style="color: #f8f8f2">]</span>      <span style="color: #f92672">=</span> <span style="color: #f8f8f2">open(</span><span style="color: #e6db74">&quot;line.png&quot;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&quot;rb&quot;</span><span style="color: #f8f8f2">)</span>
+<span style="color: #f8f8f2">data[</span><span style="color: #e6db74">&#39;prototypeCenter&#39;</span><span style="color: #f8f8f2">]</span> <span style="color: #f92672">=</span> <span style="color: #e6db74">&#39;[100,100]&#39;</span>
+<span style="color: #f8f8f2">data[</span><span style="color: #e6db74">&#39;sigma&#39;</span><span style="color: #f8f8f2">]</span>           <span style="color: #f92672">=</span> <span style="color: #e6db74">&#39;2.4&#39;</span>
+<span style="color: #f8f8f2">data[</span><span style="color: #e6db74">&#39;rhoList&#39;</span><span style="color: #f8f8f2">]</span>         <span style="color: #f92672">=</span> <span style="color: #e6db74">&#39;[0,9,2]&#39;</span>
+<span style="color: #f8f8f2">data[</span><span style="color: #e6db74">&#39;sigma0&#39;</span><span style="color: #f8f8f2">]</span>          <span style="color: #f92672">=</span> <span style="color: #e6db74">&#39;3&#39;</span>
+<span style="color: #f8f8f2">data[</span><span style="color: #e6db74">&#39;alpha&#39;</span><span style="color: #f8f8f2">]</span>           <span style="color: #f92672">=</span> <span style="color: #e6db74">&#39;0.7&#39;</span>
+<span style="color: #f8f8f2">data[</span><span style="color: #e6db74">&#39;rotInvariances&#39;</span><span style="color: #f8f8f2">]</span>  <span style="color: #f92672">=</span> <span style="color: #e6db74">&#39;12&#39;</span>
+
+<span style="color: #f8f8f2">r</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">requests</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">post(url,</span> <span style="color: #f8f8f2">files</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">files,</span> <span style="color: #f8f8f2">data</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">data)</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">json()</span>
+<span style="color: #f8f8f2">image</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">r[</span><span style="color: #e6db74">&quot;result&quot;</span><span style="color: #f8f8f2">]</span>
+</pre></div>
+{% endblock %}

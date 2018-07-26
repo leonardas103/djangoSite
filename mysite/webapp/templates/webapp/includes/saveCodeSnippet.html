@@ -1,0 +1,8 @@
+{% block content %}
+<div style="background: #272822; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%"><span style="color: #f92672">import</span> <span style="color: #f8f8f2">base64</span>
+
+<span style="color: #f8f8f2">image</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">base64</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">b64decode(image)</span>
+<span style="color: #66d9ef">with</span> <span style="color: #f8f8f2">open(</span><span style="color: #e6db74">&#39;result.png&#39;</span><span style="color: #f8f8f2">,</span> <span style="color: #e6db74">&#39;wb&#39;</span><span style="color: #f8f8f2">)</span> <span style="color: #66d9ef">as</span> <span style="color: #f8f8f2">fd:</span>
+    <span style="color: #f8f8f2">fd</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">write(image)</span>
+</pre></div>
+{% endblock %}

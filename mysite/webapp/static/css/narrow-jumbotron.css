@@ -25,12 +25,11 @@ body {
 }
 
 /* Custom page footer */
-.footer {
-  position: absolute;
+/*.footer {
   padding-top: 1.5rem;
   color: #777;
   border-top: .05rem solid #e5e5e5;
-}
+}*/
 
 /* Customize container */
 @media (min-width: 48em) {

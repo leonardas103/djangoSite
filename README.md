@@ -1,8 +1,19 @@
 # djangoSite
-testing for making a django api
+django api for COSFIRE
+
+**First install COSFIRE:**
+```sh
+cd djangoSite/COSFIRE-develop/
+python3 setup.py install --user
+```
+**install django:**
+```sh
+pip3 install django
+```
 
 **run django with:**
 ```sh
+cd djangoSite/mysite/
 python3 manage.py runserver
 ```
 
