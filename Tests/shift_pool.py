@@ -13,33 +13,19 @@ def shiftImage(image, dx, dy):
 	shift = np.roll(shift, dy, axis=0)
 	return shift
 
-def shiftImageWorker(queue, image, shift, axis, id):
+def shiftImageWorker(args):
 	# info(axis)
-	result = np.roll(image, shift, axis=axis)
-	queue.put((result,id))
-	# print('placed in queue')
+	image, shift, axis = args
+	return np.roll(image, shift, axis=axis)
 
 def shiftImageHelper(imageTiles, shift, axis):
-	jobs, rets = [], []
-	# ctx = mp.get_context('spawn')
-	queue = mp.Queue()
-	# queue = ctx.Queue()
-
-	for i in range(num_cores):
-		p = mp.Process(target=shiftImageWorker, args=(queue, imageTiles[i], shift, axis, i))
-		jobs.append(p)
-		p.start()
-	# print('Threads started')
-	for p in jobs:
-		result, id = queue.get()
-		rets.insert(id, result)
-	for p in jobs:
-		p.join() #thread stuck waiting?
-		# print('thread joined main')
-	# print('All Threads finished')
+	# print([res.get(timeout=1) for res in results])
+	args = zip(imageTiles, [shift]*num_cores, [axis]*num_cores)
+	with mp.Pool(processes=num_cores) as p:
+		result = p.map(shiftImageWorker, args)
 	if axis == 1:
-		return np.vstack(rets)
-	return np.hstack(rets)
+		return np.vstack(result)
+	return np.hstack(result)
 
 def shiftImageParallel(image, dx, dy):
 	if not dx == 0:
@@ -54,22 +40,20 @@ num_cores = mp.cpu_count()
 
 def main():
 	image = []
-	for i in range(1): 
-		image.append(np.matrix(np.random.randint(0,255, size=(15000, 15000))))
-	# dx = int(round(2*np.cos(math.pi/8)))
-	# dy = int(round(-2*np.sin(math.pi/8)))
+	num_images = 1
 	dx, dy = 13, -7
 
+	for i in range(num_images): 
+		image.append(np.matrix(np.random.randint(0,255, size=(10000, 10000))))
+
 	t0 = time.time()
-	for i in range(1):  
+	for i in range(num_images):  
 		A = shiftImage(image[i], dx, dy) 
-	print('--------------')
 	print('time1:', (time.time()-t0)*1000)
 
 	t0 = time.time()
-	for i in range(1):   
+	for i in range(num_images):   
 		B = shiftImageParallel(image[i], dx, dy)
-	print('--------------')
 	print('time2:', (time.time()-t0)*1000)
 	print('dx, dy:',dx,dy)
 

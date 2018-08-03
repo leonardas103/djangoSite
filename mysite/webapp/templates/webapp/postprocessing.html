@@ -1,6 +1,15 @@
 {% extends "webapp/header.html" %}
 {% block content %}
 <h2 style="color: #2e6c80;">Result</h2><br>
-<p>Select your threshold:</p>
+<img src="data:image/png;base64,{{result}}" style='max-height:700px;'>
+<br><br>
+<p>Select your threshold [0-255]:</p>
+<form action="/postprocessing/" method = "post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="result" value={{result}} id="id_result" >
+    <input type="number" name="threshold" value={{default}} id="id_threshold" required>
+    <button type="submit" class="btn btn-default">Submit</button>
+    <a href="javascript:history.go(-1)" class="btn btn-default">Back</a>
+</form>
 <br><br><br><br><br><br><br><br><br><br><br><br><br>
 {% endblock %}

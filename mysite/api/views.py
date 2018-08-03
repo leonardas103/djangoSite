@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
 import urllib.request
@@ -16,9 +16,9 @@ def detect(request):
 		_, buffer = cv2.imencode('.png', image)
 		data.update({"result": base64.b64encode(buffer).decode('utf-8'), "success": True})
 		if request.POST.get('source', None) == 'form':
-			imagehtml =  '<img src="data:image/png;base64,' + data['result'] + '"/>'
-			return render(request, 'webapp/postprocessing.html')
-			# return HttpResponse(imagehtml)
+			return render(request, 'webapp/postprocessing.html',{'result':data['result'], 'default': 8})
+			# return JsonResponse({'result':imagehtml})
+			# return redirect('webapp/postprocessing/')
 	return JsonResponse(data)
 
 def processImage(request):
