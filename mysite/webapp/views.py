@@ -17,3 +17,8 @@ def info(request):
 
 def about(request):
 	return render(request, 'webapp/about.html')
+
+def postprocessing(request):
+	if request.method == "POST":
+		printPOST(request)
+	return render(request, 'webapp/postprocessing.html')
