@@ -27,7 +27,7 @@ def postprocessing(request):
 		image = request.POST.get('result', None)
 		result = thresholdImage(image, threshold)
 		if image == result:
-			resp_body = '<script>alert("The site still under construction. You must click back before doing another threshold.");window.history.go(-2);</script>'
+			resp_body = '<script>alert("The image is already thresholded. You will be taken back.");window.history.go(-2);</script>'
 			return HttpResponse(resp_body)
 		return render(request, 'webapp/postprocessing.html',{'result':result, 'default':threshold})
 	return render(request, 'webapp/postprocessing.html')

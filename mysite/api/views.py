@@ -17,8 +17,6 @@ def detect(request):
 		data.update({"result": base64.b64encode(buffer).decode('utf-8'), "success": True})
 		if request.POST.get('source', None) == 'form':
 			return render(request, 'webapp/postprocessing.html',{'result':data['result'], 'default': 8})
-			# return JsonResponse({'result':imagehtml})
-			# return redirect('webapp/postprocessing/')
 	return JsonResponse(data)
 
 def processImage(request):

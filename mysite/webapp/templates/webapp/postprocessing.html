@@ -7,7 +7,10 @@
 <form action="/postprocessing/" method = "post" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="result" value={{result}} id="id_result" >
-    <input type="number" name="threshold" value={{default}} id="id_threshold" required>
+    <input type="range" class="range" name="slider" min="0" max="255" value={{default}} id="id_slider" oninput="threshold.value=parseInt(slider.value)">
+    <input type="number" name="threshold" min="0" max="255" value={{default}} id="id_threshold" style="width: 4em" required>
+    <!-- <output name="v" for="slider" style="font-weight:bold;color:red"></output> -->
+    <br>
     <button type="submit" class="btn btn-default">Submit</button>
     <a href="javascript:history.go(-1)" class="btn btn-default">Back</a>
 </form>
