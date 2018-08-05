@@ -19,6 +19,7 @@ def detect(request):
 			return render(request, 'webapp/postprocessing.html',{'result':data['result'], 'default': 8})
 	return JsonResponse(data)
 
+
 def processImage(request):
 		image, type 		= getData(request,'image')
 		image 				= getImage(image, type)
@@ -51,13 +52,14 @@ def getData(request, name):
 	
 	return data, 'data'
 
+
 def getImage(image, type):
 	if type is 'data':
 		with urllib.request.urlopen(image) as resp:
-			data = resp.read()
+			image = resp.read()
 	elif type is 'file':
-		data = image.read()
+		image = image.read()
 
-	image = np.asarray(bytearray(data), dtype="uint8")
+	image = np.asarray(bytearray(image), dtype="uint8")
 	image = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
 	return image

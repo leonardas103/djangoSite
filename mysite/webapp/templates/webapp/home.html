@@ -6,27 +6,6 @@
 
   <p>A COSFIRE filter is automatically configured to be selective for a pattern that is presented by a user. For example if we use the input image and prototype of just a line, we can detect lines at different orientations in our image.</p>
 
-<!-- <table border="0"><tbody>
-  <tr>
-    <td><img src="{% static 'img/input.png' %}" style='max-height:200px;'> </td>
-    <td><img src="{% static 'img/prototype.png' %}" style='max-height:200px;'> </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top">Input Image</td>
-    <td align="center" valign="top">Prototype</td>
-  </tr>
-  </tbody></table>
-
-<table border="0"><tbody>
-  <tr>
-    <td><img src="{% static 'img/result.png' %}" style='max-height:200px;'> </td>
-    <td><img src="{% static 'img/postprocessing.png' %}" style='max-height:200px;'> </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top">Result</td>
-    <td align="center" valign="top">Postprocessed</td>
-  </tr>
-  </tbody></table> -->
   <table border="0"><tbody>
   <tr>
     <td><img src="{% static 'img/input.png' %}" style='max-height:200px;'> </td>
@@ -46,13 +25,50 @@
 <h2 style="color: #2e6c80;">Web Form:</h2>
   <form action="/api/" method = "post" enctype="multipart/form-data">  
   	{% csrf_token %}
-    {% for field in form.visible_fields %}
+
     <div class="form-group row">
-      <label class="col-sm-2 col-form-label" > {{ field.label_tag }} </label>
-      <div class="col-sm-10" data-toggle="tooltip" title="{{field.help_text}}" data-original-title="Default tooltip"> {{ field }} </div>
+      <label class="col-sm-2 col-form-label" > {{ form.image.label_tag }} </label>
+      <div class="col-sm-10" data-toggle="tooltip" title="{{form.image.help_text}}" data-original-title="Default tooltip"> {{ form.image }} </div>
+
+      <label class="col-sm-2 col-form-label" > Type of Detection </label>
+      <div class="col-sm-10">
+          <input type="radio" onclick='file_set("hidden")' name="prototype_select" value="line" checked> Line <br>
+          <input type="radio" onclick='file_set("hidden")' name="prototype_select" value="edge"> Edge <br>
+          <input type="radio" onclick='file_set("file")' name="prototype_select" value="object"> Object<br>
+          {{ form.prototype }}
+          <div data-toggle="tooltip" title="{{form.prototypeCenter.help_text}}" data-original-title="Default tooltip">{{ form.prototypeCenter }} </div> <br>
+      </div>
+
+      <label class="col-sm-2 col-form-label" > {{ form.sigma.label_tag }} </label>
+      <div class="col-sm-10" data-toggle="tooltip" title="{{form.sigma.help_text}}" data-original-title="Default tooltip"> {{ form.sigma }} </div>
+
+      <label class="col-sm-2 col-form-label" > {{ form.rhoList.label_tag }} </label>
+      <div class="col-sm-10" data-toggle="tooltip" title="{{form.rhoList.help_text}}" data-original-title="Default tooltip"> {{ form.rhoList }} <br> </div>
+      <!--<fieldset>-->
+      <!--<legend>Tolerance:</legend>-->
+      <!--</fieldset>-->
+      <label class="col-sm-2 col-form-label" > {{ form.sigma0.label_tag }} </label>
+      <div class="col-sm-10" data-toggle="tooltip" title="{{form.sigma0.help_text}}" data-original-title="Default tooltip"> {{ form.sigma0 }} </div>
+
+      <label class="col-sm-2 col-form-label" > {{ form.alpha.label_tag }} </label>
+      <div class="col-sm-10" data-toggle="tooltip" title="{{form.alpha.help_text}}" data-original-title="Default tooltip"> {{ form.alpha }} <br> </div>
+
+      <label class="col-sm-2 col-form-label" > {{ form.rotInvariances.label_tag }} </label>
+      <div class="col-sm-10" data-toggle="tooltip" title="{{form.rotInvariances.help_text}}" data-original-title="Default tooltip"> {{ form.rotInvariances }} </div>
     </div>
-    {% endfor %}
+
     {{form.source}}
     <button type="submit" class="btn btn-default">Submit</button>
   </form>
+
+    <script>
+    function file_set(type) {
+        id_prototype.setAttribute("type", type);
+        if(type=="file"){
+            id_prototypeCenter.setAttribute("type", "text");
+        } else {
+            id_prototypeCenter.setAttribute("type", "hidden");
+        }
+    }
+    </script>
 {% endblock %}
