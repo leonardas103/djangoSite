@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 import base64
 from . import runcosfire
+import os
 
 @csrf_exempt
 def detect(request):
@@ -23,8 +24,12 @@ def detect(request):
 def processImage(request):
 		image, type 		= getData(request,'image')
 		image 				= getImage(image, type)
-		prototype, type 	= getData(request,'prototype')
-		prototype 			= getImage(prototype, type)
+		prototype_select    = request.POST.get('prototype_select', None)
+		if prototype_select == 'object': 
+			prototype, type = getData(request,'prototype')
+		else:
+			prototype, type = os.getcwd() +'/webapp/static/img/'+prototype_select+'.png', 'path'
+		prototype 		    = getImage(prototype, type)
 		prototypeCenter,_ 	= getData(request,'prototypeCenter')
 		prototypeCenter 	= tuple(prototypeCenter)
 		sigma,_ 			= getData(request,'sigma')
@@ -44,9 +49,10 @@ def getData(request, name):
 
 	data = request.POST.get(name, None)
 	if data is None:
-		data = {"error": "Sent request is missing: " + name}
-		return JsonResponse(data) #must return to main
-	
+		# data = {"error": "Sent request is missing: " + name}
+		# JsonResponse(data) #must return to main
+		return None
+
 	if "/" not in data:	#only urls gets returned as string
 		data = json.loads(data)
 	
@@ -59,6 +65,8 @@ def getImage(image, type):
 			image = resp.read()
 	elif type is 'file':
 		image = image.read()
+	elif type is 'path':
+		return cv2.imread(image, cv2.IMREAD_GRAYSCALE)
 
 	image = np.asarray(bytearray(image), dtype="uint8")
 	image = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
