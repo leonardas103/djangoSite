@@ -1,50 +1,81 @@
+import time
+
+import cv2
 import numpy as np
+import multiprocessing as mp
 from scipy import signal
 
+def sigma2sz(sigma):
+    return int(np.ceil(sigma*3))*2 + 1
 
-def conv_split(image, kernel, num_cores):
-    q = []
-    tiles = np.array_split(image, num_cores, axis=0)
-    for i in range(len(tiles)):
-        q.append(signal.convolve(tiles[i], kernel, mode='same'))
-    return np.vstack(q)
+def getFilter(sigma, sigmaRatio):
+    sz = sigma2sz(sigma)
+    kernel1 = np.outer(cv2.getGaussianKernel(sz, sigma), cv2.getGaussianKernel(sz, sigma))
+    kernel2 = np.outer(cv2.getGaussianKernel(sz, sigma * sigmaRatio), cv2.getGaussianKernel(sz, sigma * sigmaRatio))
+    return kernel2 - kernel1
 
-def split(image, kernel, sections):
+def blur_worker(queue, image, kernel):
+    queue.put(signal.convolve(image, kernel, mode='same'))
+
+
+def blur_par(image, kernel, sections):
+    tiles, jobs = [], []
+    step = len(image)//sections
+    overlap = len(kernel)//2
+    row_idx = range(0, len(image), step)
+    queues = [mp.Queue() for i in range(len(row_idx))]
+
+    for i, row in enumerate(row_idx):
+
+        if(row+step >= len(image)): #last row
+            last_tile = image[row:len(image),]
+            if len(last_tile) > overlap:
+                jobs.append(mp.Process(target=blur_worker, args=[queues[i], last_tile, kernel]))
+                jobs[i].start()
+
+        else:
+            jobs.append(mp.Process(target=blur_worker, args=[queues[i], image[row:row+step+2*overlap,], kernel]))
+            jobs[i].start()
+
+    tiles = [queue.get() for queue in queues]
+    for i, row in enumerate(row_idx):
+        if (i == 0):
+            tiles[i] = tiles[i][0:step + overlap, ]
+        else:
+            tiles[i] = tiles[i][overlap:step + overlap, ]
+
+    return np.vstack(tiles)
+
+def blue_split_seq(image, kernel, sections):
     tiles = []
     step = len(image)//sections
     overlap = len(kernel)//2
-    print('image:%s kernel:%s step:%s  overlap:%s' % (len(image), len(kernel), step,overlap))
     for i, row in enumerate(range(0, len(image), step)):
-        print('i=',i, ' row=',row)
-        print('tile:')
-        print(image[row:row+step+2*overlap,])
-        if(row+step > len(image)):
-            tiles.append(signal.convolve(image[row:len(image),], kernel, mode='same'))
-            print('after:')
-            print(tiles[i])
+        if(row+step >= len(image)): #last row
+            last_tile = image[row:len(image),]
+            if len(last_tile) > overlap:
+                tiles.append(signal.convolve(last_tile, kernel, mode='same'))
+                tiles[i] = tiles[i][overlap:step + overlap, ]
+
         else:    
             tiles.append(signal.convolve(image[row:row+step+2*overlap,], kernel, mode='same'))
-            tmp = tiles[i]
             if(i==0):
-                tmp = tmp[0:step+overlap,]
+                tiles[i] = tiles[i][0:step + overlap, ]
             else:
-                tmp = tmp[1:step+overlap,]
-            tiles[i] = tmp
-            print('after:')
-            print(tiles[i])
+                tiles[i] = tiles[i][overlap:step + overlap, ]
     return np.vstack(tiles)
 
+num_cores = mp.cpu_count()
 def main():
-    kernel = np.outer([1,2,3], [4,5,6])
-    image = np.matrix(np.random.randint(0, 10, size=(10, 10)))
-    print('initial:')
-    print(image)
+    kernel = getFilter(1.8, 0.5)
+    image = np.matrix(np.random.randint(0, 255, size=(8000, 8000)))
 
+    t0 = time.time()
     A = signal.convolve(image, kernel, mode='same')
-    B = split(image, kernel, 3)
-    print(A)
-    print('----------')
-    print(B)
+    print('time1:', (time.time() - t0) * 1000)
+    t0 = time.time()
+    B = blur_par(image, kernel, 2)
+    print('time2:', (time.time() - t0) * 1000)
     print("A == B:", np.isclose(A, B).all())
 
 
