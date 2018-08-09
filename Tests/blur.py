@@ -27,10 +27,10 @@ def blur_worker(queue, image, kernel):
 def split(image, kernel):
     height, width = np.shape(image)
     tiles = []
-    step = width//(num_cores//2)
+    step = int(np.ceil(width/(num_cores//2)))
     overlap = len(kernel)//2
     tile_num = 0
-    for i, row in enumerate([0, height//2]): #fix for off height
+    for i, row in enumerate([0, height//2]): 
         for j, col in enumerate(range(0, width, step)):
             if(col+step >= width): #last col
                 last_tile = image[row:row+height//2+2*overlap:,col:width]
@@ -43,15 +43,16 @@ def split(image, kernel):
                 tiles.append(image[row:row+height//2+2*overlap:,col:col+step+2*overlap])
                 tile_num += 1 
             # print('step:%s overlap:%s i:%s col:%s #cols:%s' % (step, overlap, i ,col, range(0, len(image), step)))
+            # print(tiles[tile_num-1])
     return tiles
 
 def merge(image, kernel, tiles):
     height, width = np.shape(image)
-    step = width//(num_cores//2)
+    step = int(np.ceil(width/(num_cores//2)))
     overlap = len(kernel)//2
     result_0, result_1, result = [],[],[]
     tile_num = 0
-    for i, row in enumerate([0, height//2]): #fix for odd height
+    for i, row in enumerate([0, height//2]): 
         for j, col in enumerate(range(0, width, step)):
             if (i == 0):
                 if(j==0):
@@ -83,34 +84,53 @@ def blur_par(image, kernel):
     timing.append(("\tthreads done:", (time.time()-t0)*1000))
     for job in jobs: job.join()
     t0 = time.time()
-    image = merge(image, kernel, ret)
+    image = merge2(image, kernel, ret)
     timing.append(("\tmerging", (time.time()-t0)*1000))
     return image
+
+def merge2(image, kernel, tiles):
+    height, width = np.shape(image)
+    result = np.empty_like(image, dtype=float)
+    step = int(np.ceil(width/(num_cores//2)))
+    overlap = len(kernel)//2
+    result_0, result_1 = [],[]
+    tile_num = 0
+    for i, row in enumerate([0, height//2]): 
+        for j, col in enumerate(range(0, width, step)):
+            if (i == 0):
+                if(j==0):
+                    result[0:overlap+height//2, 0:step+overlap] = tiles[tile_num][0:height//2 + overlap, 0:step+overlap]
+                else:
+                    result[0:overlap+height//2, col+overlap:col+step+overlap] = tiles[tile_num][0:height//2 + overlap, overlap:step+overlap]
+            else:
+                if(j==0):
+                    result[overlap+height//2:height, col:col+step+overlap] = tiles[tile_num][overlap:height//2 + overlap, 0:step+overlap]
+                else:        
+                    result[overlap+height//2:height, col+overlap:col+step+overlap] = tiles[tile_num][overlap:height//2 + overlap, overlap:step+overlap]
+            tile_num += 1
+    return result
+
 
 # num_cores = mp.cpu_count()
 num_cores = 4
 
 def main():
-    image = np.matrix(np.random.randint(0, 10, size=(20, 20)))
+    image = np.matrix(np.random.randint(0, 10, size=(1000, 1000)))
 
     kernel = getFilter(1.8, 0.5)
-
-    # print('initial:')
-    # print(image)
+    # kernel = np.outer([1,2,3,4,5],[1,2,3,4,5])
 
     t0 = time.time()
     A = blur(image, kernel)
     print('time1:', (time.time() - t0) * 1000)
-    # print(A)
 
     t0 = time.time()
     B = blur_par(image, kernel)
     print('time2:', (time.time() - t0) * 1000)
-    # print(B)
-
+    
     print("A == B:", np.isclose(A, B).all())
-    for i in timing:
-        print(i)
+
+
 
 if __name__ == '__main__':
     main()
