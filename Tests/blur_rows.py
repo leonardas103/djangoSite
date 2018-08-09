@@ -65,6 +65,63 @@ def blue_split_seq(image, kernel, sections):
                 tiles[i] = tiles[i][overlap:step + overlap, ]
     return np.vstack(tiles)
 
+def split(image, kernel, sections):
+    tiles = []
+    step = len(image)//sections
+    overlap = len(kernel)//2
+    for i, row in enumerate(range(0, len(image), step)):
+        if(row+step >= len(image)): #last row
+            last_tile = image[row:len(image),]
+            if len(last_tile) > overlap:
+                tiles.append(last_tile)
+        else:
+            tiles.append(image[row:row+step+2*overlap,])
+    return tiles
+
+def blur_worker_split(queue, image, kernel, idx):
+    step = len(image) // num_cores
+    overlap = len(kernel) // 2
+    if (idx + step >= len(image)):  # last row
+        last_tile = image[idx:len(image), ]
+        if len(last_tile) > overlap:
+            tile = last_tile
+    else:
+        tile = image[idx:idx + step + 2 * overlap, ]
+
+    queue.put(signal.convolve(tile, kernel, mode='same'))
+
+def blur_and_split(image, kernel):
+    step = len(image) // num_cores
+    overlap = len(kernel) // 2
+    row_idx = range(0, len(image), step)
+    queues = [mp.Queue() for i in range(len(row_idx))]
+    jobs = [mp.Process(target=blur_worker_split, args=[queues[i], image, kernel, row_idx[i]]) for i in range(len(row_idx))]
+    for job in jobs: job.start()
+    ret = [queue.get() for queue in queues]
+    for job in jobs: job.join()
+    for i, row in enumerate(row_idx):
+        if (i == 0):
+            ret[i] = ret[i][0:step + overlap, ]
+        else:
+            ret[i] = ret[i][overlap:step + overlap, ]
+    return np.vstack(ret)
+
+def blur_from_split(image, tiles, kernel):
+    step = len(image) // num_cores
+    overlap = len(kernel) // 2
+    row_idx = range(0, len(image), step)
+    queues = [mp.Queue() for i in range(len(tiles))]
+    jobs = [mp.Process(target=blur_worker, args=[queues[i], tiles[i], kernel]) for i in range(len(tiles))]
+    for job in jobs: job.start()
+    ret = [queue.get() for queue in queues]
+    for job in jobs: job.join()
+    for i, row in enumerate(row_idx):
+        if (i == 0):
+            ret[i] = ret[i][0:step + overlap, ]
+        else:
+            ret[i] = ret[i][overlap:step + overlap, ]
+    return np.vstack(ret)
+
 num_cores = mp.cpu_count()
 def main():
     kernel = getFilter(1.8, 0.5)
@@ -73,10 +130,18 @@ def main():
     t0 = time.time()
     A = signal.convolve(image, kernel, mode='same')
     print('time1:', (time.time() - t0) * 1000)
+
     t0 = time.time()
-    B = blur_par(image, kernel, 2)
-    print('time2:', (time.time() - t0) * 1000)
-    print("A == B:", np.isclose(A, B).all())
+    C = blur_from_split(image, split(image, kernel, num_cores), kernel)
+    print('time3:', (time.time() - t0) * 1000)
+
+
+    t0 = time.time()
+    D = blur_and_split(image, kernel)
+    print('time4:', (time.time() - t0) * 1000)
+
+    print("A == C:", np.isclose(A, C).all())
+    print("A == D:", np.isclose(A, D).all())
 
 
 if __name__ == '__main__':

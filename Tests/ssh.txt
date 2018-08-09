@@ -1,0 +1,14 @@
+#login:
+ssh -X s2969041@peregrine.hpc.rug.nl
+ssh -l s2969041 peregrine.hpc.rug.nl
+
+#copy file:
+scp -r /home/leo/Desktop/Bsc/djangoSite/Tests s2969041@peregrine.hpc.rug.nl:/home/s2969041
+rsync /home/leo/Desktop/Bsc/djangoSite/Tests s2969041@peregrine.hpc.rug.nl:/home/s2969041
+
+search:
+module spider module_name
+
+#install
+mmodule add Python/3.5.2-foss-2016a
+module add  OpenCV/3.1.0-foss-2016a-Python-3.5.1
