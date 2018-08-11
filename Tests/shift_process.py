@@ -4,6 +4,7 @@ import os
 import time
 import numpy as np
 
+timing = []
 
 def info(title):
 	print('axis: %s pid: %s'% (title,os.getpid()) )
@@ -13,33 +14,21 @@ def shiftImage(image, dx, dy):
 	shift = np.roll(shift, dy, axis=0)
 	return shift
 
-def shiftImageWorker(queue, image, shift, axis, id):
-	# info(axis)
+def shiftImageWorker(queue, image, shift, axis):
 	result = np.roll(image, shift, axis=axis)
-	queue.put((result,id))
-	# print('placed in queue')
+	queue.put(result)
 
 def shiftImageHelper(imageTiles, shift, axis):
-	jobs, rets = [], []
-	# ctx = mp.get_context('spawn')
-	queue = mp.Queue()
-	# queue = ctx.Queue()
-
-	for i in range(num_cores):
-		p = mp.Process(target=shiftImageWorker, args=(queue, imageTiles[i], shift, axis, i))
-		jobs.append(p)
-		p.start()
-	# print('Threads started')
-	for p in jobs:
-		result, id = queue.get()
-		rets.insert(id, result)
-	for p in jobs:
-		p.join() #thread stuck waiting?
-		# print('thread joined main')
-	# print('All Threads finished')
+	queues = [mp.Queue() for i in range(num_cores)]
+	jobs = [mp.Process(target=shiftImageWorker, args=[queues[i], imageTiles[i], shift, axis]) for i in range(num_cores)]
+	
+	for job in jobs: job.start()
+	ret = [queue.get() for queue in queues]
+	for job in jobs: job.join()
+	
 	if axis == 1:
-		return np.vstack(rets)
-	return np.hstack(rets)
+		return np.vstack(ret)
+	return np.hstack(ret)
 
 def shiftImageParallel(image, dx, dy):
 	if not dx == 0:
@@ -53,32 +42,29 @@ def shiftImageParallel(image, dx, dy):
 num_cores = mp.cpu_count()
 
 def main():
-	image = []
-	for i in range(1): 
-		image.append(np.matrix(np.random.randint(0,255, size=(2000, 2000))))
-	# dx = int(round(2*np.cos(math.pi/8)))
-	# dy = int(round(-2*np.sin(math.pi/8)))
+	image, A,B = [],[],[]
+	image.append(np.matrix(np.random.randint(0,255, size=(1000, 1000))))
+	image.append(np.matrix(np.random.randint(0,255, size=(2000, 2000))))
+	image.append(np.matrix(np.random.randint(0,255, size=(4000, 4000))))
 	dx, dy = 20, -20
 
-	t0 = time.time()
-	for i in range(1):  
-		A = shiftImage(image[i], dx, dy) 
-	print('--------------')
-	print('time1:', (time.time()-t0)*1000)
+	
+	for img in image:
+		t0 = time.time()  
+		A.append(shiftImage(img, dx, dy))
+		timing.append('seq['+str(len(img))+']:' +str((time.time()-t0)*1000))
+	timing.append('--------------')
+	
+	for img in image:
+		t0 = time.time()  
+		B.append(shiftImageParallel(img, dx, dy))
+		timing.append('par['+str(len(img))+']:' +str((time.time()-t0)*1000))
+	timing.append('--------------')
 
-	t0 = time.time()
-	for i in range(1):   
-		B = shiftImageParallel(image[i], dx, dy)
-	print('--------------')
-	print('time2:', (time.time()-t0)*1000)
-
-	# print(image[0])
-	# print('--------------')
-	# print(A)
-	# print('--------------')
-	# print(B)
-
-	print("A == B:", np.isclose(A, B).all())
+	for i in timing:
+		print(i)
+	for i,_ in enumerate(A):
+		print(len(A[i]),": A == B:", np.isclose(A[i], B[i]).all())
 
 if __name__ == '__main__':
 	# freeze_support()

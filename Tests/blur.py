@@ -46,7 +46,7 @@ def split(image, kernel):
             # print(tiles[tile_num-1])
     return tiles
 
-def merge(image, kernel, tiles):
+def merge_old(image, kernel, tiles):
     height, width = np.shape(image)
     step = int(np.ceil(width/(num_cores//2)))
     overlap = len(kernel)//2
@@ -75,27 +75,26 @@ def merge(image, kernel, tiles):
 def blur_par(image, kernel):
     t0 = time.time()
     tiles = split(image, kernel)
-    timing.append(("\tsplitting image", (time.time()-t0)*1000))
+    # timing.append(("\tsplitting image", (time.time()-t0)*1000))
     queues = [mp.Queue() for i in range(len(tiles))]
     jobs = [mp.Process(target=blur_worker, args=[queues[i], tiles[i], kernel]) for i in range(len(tiles))]
     for job in jobs: job.start()
     t0 = time.time()
     ret = [queue.get() for queue in queues]
-    timing.append(("\tthreads done:", (time.time()-t0)*1000))
+    # timing.append(("\tthreads done:", (time.time()-t0)*1000))
     for job in jobs: job.join()
     t0 = time.time()
-    image = merge2(image, kernel, ret)
-    timing.append(("\tmerging", (time.time()-t0)*1000))
+    image = merge(image, kernel, ret)
+    # timing.append(("\tmerging", (time.time()-t0)*1000))
     return image
 
-def merge2(image, kernel, tiles):
+def merge(image, kernel, tiles):
     height, width = np.shape(image)
     result = np.empty_like(image, dtype=float)
     step = int(np.ceil(width/(num_cores//2)))
     overlap = len(kernel)//2
-    result_0, result_1 = [],[]
     tile_num = 0
-    for i, row in enumerate([0, height//2]): 
+    for i, _ in enumerate([0, height//2]): 
         for j, col in enumerate(range(0, width, step)):
             if (i == 0):
                 if(j==0):
@@ -111,26 +110,34 @@ def merge2(image, kernel, tiles):
     return result
 
 
-# num_cores = mp.cpu_count()
-num_cores = 4
+num_cores = mp.cpu_count()
+# num_cores = 4
 
 def main():
-    image = np.matrix(np.random.randint(0, 10, size=(1000, 1000)))
-
     kernel = getFilter(1.8, 0.5)
     # kernel = np.outer([1,2,3,4,5],[1,2,3,4,5])
+    images, A,B = [],[],[]
+    images.append(np.matrix(np.random.randint(0,255, size=(1000, 1000))))
+    images.append(np.matrix(np.random.randint(0,255, size=(2000, 2000))))
+    images.append(np.matrix(np.random.randint(0,255, size=(4000, 4000))))
+    images.append(np.matrix(np.random.randint(0,255, size=(6000, 6000))))
 
-    t0 = time.time()
-    A = blur(image, kernel)
-    print('time1:', (time.time() - t0) * 1000)
+    for img in images:
+        t0 = time.time()
+        A.append(signal.convolve(img, kernel, mode='same'))
+        timing.append('seq['+str(len(img))+']:' +str((time.time()-t0)*1000))
+    timing.append('--------------')
 
-    t0 = time.time()
-    B = blur_par(image, kernel)
-    print('time2:', (time.time() - t0) * 1000)
-    
-    print("A == B:", np.isclose(A, B).all())
+    for img in images:
+        t0 = time.time()
+        B.append(blur_par(img, kernel))
+        timing.append('B_par['+str(len(img))+']:' +str((time.time()-t0)*1000))
+    timing.append('--------------')
 
-
+    for i in timing:
+        print(i)
+    # for i,_ in enumerate(A):
+    #     print(len(A[i]),": A == B:", np.isclose(A[i], B[i]).all())
 
 if __name__ == '__main__':
     main()
