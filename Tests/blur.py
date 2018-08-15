@@ -10,7 +10,7 @@ timing = []
 def sigma2sz(sigma):
 	return int(np.ceil(sigma*3))*2 + 1
 
-def blur(image, kernel):
+def blur_seq(image, kernel, split_type):
 	return signal.convolve(image, kernel, mode='same')
 
 def getFilter(sigma, sigmaRatio):
@@ -24,52 +24,55 @@ def blur_worker(queue, image, kernel):
 	queue.put(signal.convolve(image, kernel, mode='same'))
 
 
-def blur_par(image, kernel):
-	t0 = time.time()
+def blur_par(image, kernel, split_type):
 	overlap = len(kernel)//2
 	if overlap>len(image)//num_cores:
 		import sys 
 		sys.exit('[Warning] select a smaller kernel or large image')
-	tiles = tiling.split_easy_row(image, overlap, num_cores)
-	# timing.append(("\tsplitting image", (time.time()-t0)*1000))
+	tiles = getattr(tiling, 'split_'+split_type)(image, overlap, num_cores) #tiles = tiling.split_sq(image, overlap, num_cores)
 	queues = [mp.Queue() for i in range(len(tiles))]
 	jobs = [mp.Process(target=blur_worker, args=[queues[i], tiles[i], kernel]) for i in range(len(tiles))]
 	for job in jobs: job.start()
-	t0 = time.time()
 	ret = [queue.get() for queue in queues]
-	# timing.append(("\tthreads done:", (time.time()-t0)*1000))
 	for job in jobs: job.join()
-	t0 = time.time()
-	image = tiling.merge_easy_row(image, ret, overlap, num_cores)
-	# timing.append(("\tmerging", (time.time()-t0)*1000))
+	image = getattr(tiling, 'merge_'+split_type)(image, ret, overlap, num_cores)
 	return image
 
+
+def time_function(func, images, kernel, split_type):
+	results = []
+	num_tests = 5
+	for img in images:
+		times = []
+		for _ in range(num_tests):
+			t0 = time.time() 
+			tmp = eval(func)(img, kernel, split_type)
+			times.append(time.time()-t0)
+		average = np.mean(times)*1000
+		results.append(tmp)
+		timing.append(func+'_'+split_type+'['+str(len(img))+']:' +str(average) )
+	timing.append('--------------')
+	return results
 
 num_cores = mp.cpu_count()
 # num_cores = 4
 
 def main():
 	kernel = getFilter(1.8, 0.5)
-	images, A,B = [],[],[]
-	images.append(np.matrix(np.random.randint(0,255, size=(101, 103))))
-	images.append(np.matrix(np.random.randint(0,255, size=(2000, 2000))))
+	images, A,B,C = [],[],[],[]
+	images.append(np.matrix(np.random.randint(0,255, size=(1024, 1024))))
+	images.append(np.matrix(np.random.randint(0,255, size=(2048, 2048))))
+	images.append(np.matrix(np.random.randint(0,255, size=(4096, 4096))))
 
-	for img in images:
-		t0 = time.time()
-		A.append(signal.convolve(img, kernel, mode='same'))
-		timing.append('seq['+str(len(img))+']:' +str((time.time()-t0)*1000))
-	timing.append('--------------')
-
-	for img in images:
-		t0 = time.time()
-		B.append(blur_par(img, kernel))
-		timing.append('B_par['+str(len(img))+']:' +str((time.time()-t0)*1000))
-	timing.append('--------------')
+	A = time_function('blur_seq', images, kernel, '')
+	B = time_function('blur_par', images, kernel, 'row')
+	C = time_function('blur_par', images, kernel, 'square')
 
 	for i in timing:
 		print(i)
-	for i,_ in enumerate(A):
-		print(len(A[i]),": A == B:", np.isclose(A[i], B[i]).all() )
+	# for i,_ in enumerate(A):
+	# 	print(len(A[i]),": A == B:", np.isclose(A[i], B[i]).all() )
+	# 	print(len(A[i]),": A == C:", np.isclose(A[i], C[i]).all() )
 
 if __name__ == '__main__':
 	main()

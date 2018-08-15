@@ -12,9 +12,8 @@ def overhead_worker_joblib(image):
 def overhead_joblib(image):
 	image_tiles = np.array_split(image, num_cores, axis=0)
 	return_value = Parallel(n_jobs=num_cores)(delayed(overhead_worker_joblib)(image_tiles[i],) for i in range(num_cores))
-	image = np.hstack(return_value)
+	image = np.vstack(return_value)
 	return image
-
 
 def overhead_worker_pool(args):
 	image, dummy_var = args
@@ -22,87 +21,88 @@ def overhead_worker_pool(args):
 
 
 def overhead_pool(image):
-	dummy_var = 0
 	image_tiles = np.array_split(image, num_cores, axis=0)
-	args = zip(image_tiles, [dummy_var]*num_cores)
+	dummy_var = 0
+	args = zip(image_tiles, [dummy_var]*num_cores,)
 	with mp.Pool(processes=num_cores) as p:
 		image = p.map(overhead_worker_pool, args)
-	image = np.hstack(image)
-	return image
+		# image = p.map_async(overhead_worker_pool, args).get()
+	return np.vstack(image)
 
 def overhead_worker_process(queue, image):
 	queue.put(image)
 
 def overhead_process(image):
 	image_tiles = np.array_split(image, num_cores, axis=0)
-	queues = [mp.Queue() for i in range(num_cores)]
+	queues = [mp.SimpleQueue() for i in range(num_cores)]
 	jobs = [mp.Process(target=overhead_worker_process, args=[queues[i], image_tiles[i]]) for i in range(num_cores)]
 	
 	for job in jobs: job.start()
 	return_value = [queue.get() for queue in queues]
 	for job in jobs: job.join()
 	
-	image = np.hstack(return_value)
+	image = np.vstack(return_value)
 	return image
 
-def merge(image, tiles, sections):
-	height, _ = np.shape(image)
-	result = np.empty_like(image)
-	for row,tile in enumerate(tiles):
-		result[row:len(tile),] = tile
-	return result
+
+def overhead_worker_process_pipe(pipe, image):
+	pipe.send(image)
+	pipe.close()
+
+def overhead_process_pipe(image):
+	image_tiles = np.array_split(image, num_cores, axis=0)
+	pipes = [mp.Pipe(duplex=False) for _ in range(num_cores)]
+	jobs = [mp.Process(target=overhead_worker_process_pipe, args=[pipes[i][1], image_tiles[i]]) for i in range(num_cores)]
+	
+	for job in jobs: job.start()
+	pipes_out = [pipe[0].recv() for pipe in pipes]
+	for job in jobs: job.join()
+	
+	image = np.vstack(pipes_out)
+	return image
 
 def control(image):
 	image_tiles = np.array_split(image, num_cores, axis=0)
-	m = merge(image, image_tiles, num_cores)
-	s = np.hstack(image_tiles)
-	print(":stack == merge:", np.isclose(m, s).all())
+	s = np.vstack(image_tiles)
 	return s
+
+def time_function(func, images):
+	results = []
+	num_tests = 10
+	for img in images:
+		times = []
+		for _ in range(num_tests):
+			t0 = time.time() 
+			tmp = eval(func)(img)
+			times.append(time.time()-t0)
+		average = np.mean(times)*1000
+		results.append(tmp)
+		timing.append(func+'['+str(len(img))+']:' +str(average) )
+	timing.append('--------------')
+	return results
+
 
 num_cores = mp.cpu_count()
 
 def main():
-	image, A,B,C,D,E = [],[],[],[],[],[]
-	image.append(np.matrix(np.random.randint(0,255, size=(1000, 1000))))
-	image.append(np.matrix(np.random.randint(0,255, size=(2000, 2000))))
-	image.append(np.matrix(np.random.randint(0,255, size=(4000, 4000))))
+	images = []
+	images.append(np.matrix(np.random.randint(0,255, size=(1000, 1001))))
+	images.append(np.matrix(np.random.randint(0,255, size=(2000, 2000))))
+	images.append(np.matrix(np.random.randint(0,255, size=(4000, 4000))))
 
-	for img in image:
-		t0 = time.time()  
-		A.append(control(img))
-		timing.append('control['+str(len(img))+']:' +str((time.time()-t0)*1000))
-	timing.append('--------------')
-
-	for img in image:
-		t0 = time.time()  
-		B.append(overhead_process(img))
-		timing.append('process['+str(len(img))+']:' +str((time.time()-t0)*1000))
-	timing.append('--------------')
-
-	for img in image:
-		t0 = time.time()  
-		C.append(overhead_pool(img))
-		timing.append('pool['+str(len(img))+']:' +str((time.time()-t0)*1000))
-	timing.append('--------------')
-
-	for img in image:
-		t0 = time.time()  
-		D.append(overhead_joblib(img))
-		timing.append('joblib['+str(len(img))+']:' +str((time.time()-t0)*1000))
-	timing.append('--------------')
-
-	# for img in image:
-	# 	t0 = time.time()  
-	# 	A.append(overhead_process_pipe(img))
-	# 	timing.append('seq['+str(len(img))+']:' +str((time.time()-t0)*1000))
-	# timing.append('--------------')
+	A = time_function('control', images)
+	B = time_function('overhead_process', images)
+	C = time_function('overhead_process_pipe', images)
+	D = time_function('overhead_joblib', images)
+	E = time_function('overhead_pool', images)
+	
 
 	for i in timing:
 		print(i)
-	for i,_ in enumerate(A):
-		print(len(A[i]),": A == B:", np.isclose(A[i], B[i]).all())
-		print(len(A[i]),": A == C:", np.isclose(A[i], C[i]).all())
-		print(len(A[i]),": A == D:", np.isclose(A[i], D[i]).all())
+	# for i,_ in enumerate(A):
+	# 	print(len(A[i]),": A == B:", np.isclose(A[i], B[i]).all())
+	# 	print(len(A[i]),": A == C:", np.isclose(A[i], C[i]).all())
+		# print(len(A[i]),": A == D:", np.isclose(A[i], D[i]).all())
 		# print(len(A[i]),": A == E:", np.isclose(A[i], E[i]).all())
 
 if __name__ == '__main__':

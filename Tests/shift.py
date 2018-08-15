@@ -8,7 +8,7 @@ import tiling
 
 timing = []
 
-def shiftImage(image, dx, dy):
+def shift_seq(image, dx, dy):
 	height, width = np.shape(image)
 	shift = np.roll(image, dx, axis=1)
 	shift = np.roll(shift, dy, axis=0)
@@ -23,7 +23,7 @@ def shiftImage(image, dx, dy):
 	return shift
 
 
-def shiftImageWorker(queue, image, dx, dy):
+def shift_worker(queue, image, dx, dy):
 	shift = np.roll(image, dx, axis=1)
 	shift = np.roll(shift, dy, axis=0)
 
@@ -39,9 +39,9 @@ def shiftImageWorker(queue, image, dx, dy):
 
 	queue.put(shift)
 
-def shiftImageHelper(imageTiles, dx, dy):
+def shift_process(imageTiles, dx, dy):
 	queues = [mp.Queue() for i in range(num_cores)]
-	jobs = [mp.Process(target=shiftImageWorker, args=[queues[i], imageTiles[i], dx, dy]) for i in range(num_cores)]
+	jobs = [mp.Process(target=shift_worker, args=[queues[i], imageTiles[i], dx, dy]) for i in range(num_cores)]
 	
 	for job in jobs: job.start()
 	ret = [queue.get() for queue in queues]
@@ -49,13 +49,20 @@ def shiftImageHelper(imageTiles, dx, dy):
 	
 	return ret
 
-
-def shiftImageParallel(image, dx, dy):
+def shiftParallel_row(image, dx, dy):
 	overlap = max(abs(dx),abs(dy))
-	tiles = tiling.split_easy_sq(image, overlap, num_cores)
-	shifted = shiftImageHelper(tiles, dx, dy)
-	ret = tiling.merge_easy_sq(image, shifted, overlap, num_cores)
+	tiles = tiling.split_square(image, overlap, num_cores)
+	shifted = shift_process(tiles, dx, dy)
+	ret = tiling.merge_square(image, shifted, overlap, num_cores)
 	return ret
+
+def shiftParallel_sq(image, dx, dy):
+	overlap = max(abs(dx),abs(dy))
+	tiles = tiling.split_square(image, overlap, num_cores)
+	shifted = shift_process(tiles, dx, dy)
+	ret = tiling.merge_square(image, shifted, overlap, num_cores)
+	return ret
+
 
 def two_step_shift_worker(queue, image, shift, axis):
 	queue.put(np.roll(image, shift, axis=axis))
@@ -91,40 +98,44 @@ def two_step_shift(image, dx, dy):
 
 	return image
 
+
+def time_function(func, images, dx, dy):
+	results = []
+	num_tests = 2
+	for img in images:
+		times = []
+		for _ in range(num_tests):
+			t0 = time.time() 
+			tmp = eval(func)(img, dx, dy)
+			times.append(time.time()-t0)
+		average = np.mean(times)*1000
+		results.append(tmp)
+		timing.append(func+'['+str(len(img))+']:' +str(average) )
+	timing.append('--------------')
+	return results
+
 # num_cores = mp.cpu_count()
 num_cores = 4
 
 def main():
-	images,A,B,C = [],[],[],[]
-	images.append(np.matrix(np.random.randint(0,255, size=(1000, 1000))))
-	# images.append(np.matrix(np.random.randint(0,255, size=(2000, 2000))))
-	# images.append(np.matrix(np.random.randint(0,255, size=(3000, 3000))))
+	images = []
+	images.append(np.matrix(np.random.randint(0,255, size=(1024, 1024))))
+	images.append(np.matrix(np.random.randint(0,255, size=(2048, 2048))))
+	images.append(np.matrix(np.random.randint(0,255, size=(4096, 4096))))
 
-	dx, dy = -7, 1
-
-	for img in images:
-		t0 = time.time()
-		A.append(shiftImage(img, dx, dy))
-		timing.append('seq['+str(len(img))+']:' +str((time.time()-t0)*1000))
-	timing.append('--------------')
-
-	for img in images:
-		t0 = time.time()
-		B.append(shiftImageParallel(img, dx, dy))
-		timing.append('B_par['+str(len(img))+']:' +str((time.time()-t0)*1000))
-	timing.append('--------------')
-
-	for img in images:
-		t0 = time.time()
-		C.append(two_step_shift(img, dx, dy))
-		timing.append('C_2step['+str(len(img))+']:' +str((time.time()-t0)*1000))
-	timing.append('--------------')
+	dx, dy = 123, 123
+	A = time_function('shift_seq', images, dx, dy)
+	B = time_function('shiftParallel_sq', images, dx, dy)
+	C = time_function('shiftParallel_row', images, dx, dy)
+	D = time_function('two_step_shift', images, dx, dy)
+	
 
 	for i in timing:
 		print(i)
-	for i,_ in enumerate(A):
-		print(len(A[i]),": A == B:", np.isclose(A[i], B[i]).all())
-		print(len(A[i]),": A == C:", np.isclose(A[i], C[i]).all())
+	# for i,_ in enumerate(A):
+	# 	print(len(A[i]),": A == B:", np.isclose(A[i], B[i]).all())
+	# 	print(len(A[i]),": A == C:", np.isclose(A[i], C[i]).all())
+	# 	print(len(A[i]),": A == D:", np.isclose(A[i], D[i]).all())
 
 
 
