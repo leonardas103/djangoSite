@@ -91,8 +91,8 @@ def main():
 	images.append(np.matrix(np.random.randint(0,255, size=(4000, 4000))))
 
 	A = time_function('control', images)
-	B = time_function('overhead_process', images)
-	C = time_function('overhead_process_pipe', images)
+	B = time_function('overhead_process_pipe', images)
+	C = time_function('overhead_process', images)
 	D = time_function('overhead_joblib', images)
 	E = time_function('overhead_pool', images)
 	
