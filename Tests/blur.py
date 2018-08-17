@@ -41,7 +41,7 @@ def blur_par(image, kernel, split_type):
 
 def time_function(func, images, kernel, split_type):
 	results = []
-	num_tests = 5
+	num_tests = 10
 	for img in images:
 		times = []
 		for _ in range(num_tests):
@@ -60,6 +60,7 @@ num_cores = mp.cpu_count()
 def main():
 	kernel = getFilter(1.8, 0.5)
 	images, A,B,C = [],[],[],[]
+	images.append(np.matrix(np.random.randint(0,255, size=(512, 512))))
 	images.append(np.matrix(np.random.randint(0,255, size=(1024, 1024))))
 	images.append(np.matrix(np.random.randint(0,255, size=(2048, 2048))))
 	images.append(np.matrix(np.random.randint(0,255, size=(4096, 4096))))

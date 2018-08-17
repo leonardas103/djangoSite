@@ -51,9 +51,9 @@ def shift_process(imageTiles, dx, dy):
 
 def shiftParallel_row(image, dx, dy):
 	overlap = max(abs(dx),abs(dy))
-	tiles = tiling.split_square(image, overlap, num_cores)
+	tiles = tiling.split_row(image, overlap, num_cores)
 	shifted = shift_process(tiles, dx, dy)
-	ret = tiling.merge_square(image, shifted, overlap, num_cores)
+	ret = tiling.merge_row(image, shifted, overlap, num_cores)
 	return ret
 
 def shiftParallel_sq(image, dx, dy):
@@ -101,7 +101,7 @@ def two_step_shift(image, dx, dy):
 
 def time_function(func, images, dx, dy):
 	results = []
-	num_tests = 2
+	num_tests = 10
 	for img in images:
 		times = []
 		for _ in range(num_tests):
@@ -114,19 +114,20 @@ def time_function(func, images, dx, dy):
 	timing.append('--------------')
 	return results
 
-# num_cores = mp.cpu_count()
-num_cores = 4
+num_cores = mp.cpu_count()
+# num_cores = 4
 
 def main():
 	images = []
 	images.append(np.matrix(np.random.randint(0,255, size=(1024, 1024))))
 	images.append(np.matrix(np.random.randint(0,255, size=(2048, 2048))))
 	images.append(np.matrix(np.random.randint(0,255, size=(4096, 4096))))
+	images.append(np.matrix(np.random.randint(0,255, size=(8192, 8192))))
 
 	dx, dy = 123, 123
 	A = time_function('shift_seq', images, dx, dy)
-	B = time_function('shiftParallel_sq', images, dx, dy)
-	C = time_function('shiftParallel_row', images, dx, dy)
+	B = time_function('shiftParallel_row', images, dx, dy)
+	C = time_function('shiftParallel_sq', images, dx, dy)
 	D = time_function('two_step_shift', images, dx, dy)
 	
 

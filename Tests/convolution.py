@@ -34,6 +34,7 @@ def main():
 	images.append(np.matrix(np.random.randint(0,255, size=(512, 512))))
 	images.append(np.matrix(np.random.randint(0,255, size=(1024, 1024))))
 	images.append(np.matrix(np.random.randint(0,255, size=(2048, 2048))))
+	images.append(np.matrix(np.random.randint(0,255, size=(4096, 4096))))
 	kernel1 = cv2.getGaussianKernel(13, 2)
 	kernel2 = cv2.getGaussianKernel(13, 1)
 	kernel1_2D = np.outer(kernel1, kernel1)
@@ -46,8 +47,8 @@ def main():
 	
 	for i in timing:
 		print(i)
-	for i,_ in enumerate(A):
-		print(len(A[i]),": A == B:", np.isclose(A[i], B[i]).all())
+	# for i,_ in enumerate(A):
+	# 	print(len(A[i]),": A == B:", np.isclose(A[i], B[i]).all())
 
 if __name__ == '__main__':
 	main()

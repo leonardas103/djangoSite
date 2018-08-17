@@ -82,7 +82,7 @@ def control(image):
 
 def time_function(func, images):
 	results = []
-	num_tests = 5
+	num_tests = 10
 	for img in images:
 		times = []
 		for _ in range(num_tests):
@@ -100,9 +100,9 @@ num_cores = mp.cpu_count()
 
 def main():
 	images = []
-	images.append(np.matrix(np.random.randint(0,255, size=(1000, 1000))))
-	images.append(np.matrix(np.random.randint(0,255, size=(2000, 2000))))
-	images.append(np.matrix(np.random.randint(0,255, size=(4000, 4000))))
+	images.append(np.matrix(np.random.randint(0,255, size=(1024, 1024))))
+	images.append(np.matrix(np.random.randint(0,255, size=(2048, 2048))))
+	images.append(np.matrix(np.random.randint(0,255, size=(4096, 4096))))
 
 	A = time_function('control', images)
 	B = time_function('process_pipe', images)
